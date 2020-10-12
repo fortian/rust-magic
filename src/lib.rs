@@ -22,8 +22,7 @@
 //!     // Create a new default configuration and load one specific magic
 //!     // database.
 //!     let databases = vec!["data/tests/db-images-png"];
-//!     let cookie = Cookie::new(CookieFlags::default(), &databases);
-//!     assert!(cookie.is_ok());
+//!     let cookie = Cookie::new(CookieFlags::default(), &databases).unwrap();
 //!
 //!     // Recognize the magic of a test file
 //!     let test_file_path = "data/tests/rust-logo-128x128-blk.png";
@@ -38,29 +37,13 @@ extern crate magic_sys as ffi;
 #[macro_use]
 extern crate bitflags;
 
-use errno::errno;
 use libc::size_t;
+use errno::errno;
 use std::error;
 use std::ffi::{CStr, CString};
 use std::fmt::Display;
 use std::ptr;
 use std::str;
-
-macro_rules! try_c_string {
-    ($x:expr) => {
-        CString::new($x).map_err(|e| MagicError { desc: format!("{:?}", e) })?
-    }
-}
-
-macro_rules! try_c_string_list {
-    ($x:expr) => {
-        if $x.len() > 0 {
-            Some(CString::new($x.join(":")).map_err(|e| MagicError { desc: format!("{:?}", e) })?)
-        } else {
-            None
-        }
-    }
-}
 
 macro_rules! from_c_str_unsafe {
     ($x:expr) => {
@@ -196,6 +179,17 @@ pub fn version() -> &'static str {
     )
 }
 
+//// According to the rust docs, this 
+//fn db_filenames(filenames: &[&str]) -> *const c_char {
+//
+//    if filenames.len() == 0 {
+//        ptr::null()
+//    } else {
+//        CString::new(filenames.join(":")).unwrap().into_raw()
+//    }
+//
+//}
+
 /// The error type used in this crate
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct MagicError {
@@ -228,11 +222,7 @@ impl Drop for Cookie {
 
 impl Cookie {
     fn last_error(&self) -> Option<MagicError> {
-        let e;
-
-        unsafe {
-            e = ffi::magic_error(self.cookie);
-        }
+        let e = unsafe { ffi::magic_error(self.cookie) };
         if e.is_null() {
             None
         } else {
@@ -252,11 +242,10 @@ impl Cookie {
     /// Returns a textual description of the contents of the `filename`
     pub fn file(&self, filename: &str) -> Result<String, MagicError> {
         let cookie = self.cookie;
-        let f = try_c_string!(filename);
-        let ptr = f.as_ptr();
-        let s = unsafe { ffi::magic_file(cookie, ptr) };
+        let f = CString::new(filename).map_err(|e| MagicError { desc: format!("{:?}", e) })?;
+        let cf = f.as_ptr();
+        let s = unsafe { ffi::magic_file(cookie, cf) };
         if s.is_null() {
-            eprintln!("file on {} failed", filename);
             Err(self.magic_failure())
         } else {
             Ok(from_c_str_unsafe!(s))
@@ -269,7 +258,6 @@ impl Cookie {
         let pbuffer = buf.as_ptr();
         let s = unsafe { ffi::magic_buffer(self.cookie, pbuffer, buffer_len) };
         if s.is_null() {
-            eprintln!("buffer for \"{:?}\" failed", buf);
             Err(self.magic_failure())
         } else {
             Ok(from_c_str_unsafe!(s))
@@ -304,14 +292,21 @@ impl Cookie {
 
     /// Check the validity of entries in the database `filenames`
     pub fn check(&self, filenames: &[&str]) -> Result<(), MagicError> {
-        let cookie = self.cookie;
-        let db_filenames = try_c_string_list!(filenames);
+        let cstring;
+        let dbs = if filenames.len() == 0 {
+            ptr::null()
+        } else {
+            cstring = CString::new(filenames.join(":")).map_err(|e| MagicError { desc: format!("{:?}", e) })?;
+            cstring.as_ptr()
+        };
 
-        let ptr = db_filenames.map(|s| s.as_ptr()).unwrap_or(ptr::null());
-        if unsafe { ffi::magic_check(cookie, ptr) } == 0 {
+        let rv;
+        unsafe {
+            rv = ffi::magic_check(self.cookie, dbs);
+        }
+        if rv == 0 {
             Ok(())
         } else {
-            eprintln!("check {:?} failed", filenames);
             Err(self.magic_failure())
         }
     }
@@ -320,26 +315,34 @@ impl Cookie {
     ///
     /// The compiled files created are named from the `basename` of each file argument with '.mgc' appended to it.
     pub fn compile(&self, filenames: &[&str]) -> Result<(), MagicError> {
-        let db_filenames = try_c_string_list!(filenames);
-        let ptr = db_filenames.map(|s| s.as_ptr()).unwrap_or(ptr::null());
-        if unsafe { ffi::magic_compile(self.cookie, ptr) } == 0 {
+        let cstring;
+        let dbs = if filenames.len() == 0 {
+            ptr::null()
+        } else {
+            cstring = CString::new(filenames.join(":")).map_err(|e| MagicError { desc: format!("{:?}", e) })?;
+            cstring.as_ptr()
+        };
+
+        if unsafe { ffi::magic_compile(self.cookie, dbs) } == 0 {
             Ok(())
         } else {
-            eprintln!("compile {:?} failed", filenames);
             Err(self.magic_failure())
         }
     }
 
     /// Dumps all magic entries in the given database `filenames` in a human readable format
     pub fn list(&self, filenames: &[&str]) -> Result<(), MagicError> {
-        let cookie = self.cookie;
-        let db_filenames = try_c_string_list!(filenames);
-        let ptr = db_filenames.map(|s| s.as_ptr()).unwrap_or(ptr::null());
+        let cstring;
+        let dbs = if filenames.len() == 0 {
+            ptr::null()
+        } else {
+            cstring = CString::new(filenames.join(":")).map_err(|e| MagicError { desc: format!("{:?}", e) })?;
+            cstring.as_ptr()
+        };
 
-        if unsafe { ffi::magic_list(cookie, ptr) } == 0 {
+        if unsafe { ffi::magic_list(self.cookie, dbs) } == 0 {
             Ok(())
         } else {
-            eprintln!("list {:?} failed", filenames);
             Err(self.magic_failure())
         }
     }
@@ -348,16 +351,17 @@ impl Cookie {
     //
     // Adds ".mgc" to the database filenames as appropriate.
     fn load(&self, filenames: &[&str]) -> Result<(), MagicError> {
-        let cookie = self.cookie;
-        let db_filenames = try_c_string_list!(filenames);
-        eprintln!("{:?} => {:?}", filenames, db_filenames);
-        let ptr = db_filenames.map(|s| s.as_ptr()).unwrap_or(ptr::null());
-        eprintln!("{:?}", ptr);
+        let cstring;
+        let dbs = if filenames.len() == 0 {
+            ptr::null()
+        } else {
+            cstring = CString::new(filenames.join(":")).map_err(|e| MagicError { desc: format!("{:?}", e) })?;
+            cstring.as_ptr()
+        };
 
-        if unsafe { ffi::magic_load(cookie, ptr) } == 0 {
+        if unsafe { ffi::magic_load(self.cookie, dbs) } == 0 {
             Ok(())
         } else {
-            eprintln!("load {:?} failed", filenames);
             Err(self.magic_failure())
         }
     }
@@ -379,7 +383,6 @@ impl Cookie {
         if unsafe { magic_sys::magic_load_buffers(cookie, ffi_buffers.as_ptr(), ffi_sizes.as_ptr(), ffi_nbuffers) } == 0 {
             Ok(())
         } else {
-            eprintln!("load_buffers {:?} failed", buffers);
             Err(self.magic_failure())
         }
     }
@@ -387,15 +390,12 @@ impl Cookie {
     // Creates a new configuration.  `flags` specifies how other functions
     // should behave.
     //
-    // This doesn't `load()` any databases yet.
+    // This doesn't `load()` any databases.
     fn open(flags: flags::CookieFlags) -> Result<Cookie, MagicError> {
-        let cookie;
-
-        unsafe {
-            cookie = ffi::magic_open((flags | flags::CookieFlags::ERROR).bits());
-        }
+        let cookie = unsafe {
+            ffi::magic_open((flags | flags::CookieFlags::ERROR).bits())
+        };
         if cookie.is_null() {
-            eprintln!("open {:?} failed", flags);
             let e = errno();
             Err(MagicError {
                 desc: format!("{} ({})", e, e.0)
