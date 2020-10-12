@@ -28,6 +28,7 @@ name = "magic"
 magic-sys = { path = "../rust-magic-sys" }
 bitflags = "1.2"
 libc = "0.2.13"
+errno = "0.2"
 
 [dev-dependencies]
 regex = "0.1.71"
