@@ -22,5 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-The Rust logo is licensed under the Apache License, a copy of which may be found
-in the data/tests directory.
+The Rust logo (`data/tests/rust-logo-128x128-blk.png`) is licensed under the
+Apache License, a copy of which may be found in `data/tests/LICENSE.Apache`.
+
+
+The file/libmagic project is licensed under a modified BSD license, a copy of
+which is in `COPYING`.  This crate contains partial test-data from the magic
+databases (`data/tests/db-images-png` is from file's `magic/Magdir/images` and
+`data/tests/db-python` is from file's `magic/Magdir/python`).  This crate
+indirectly links to libmagic via rust-magic-sys, which is licensed under the MIT
+License.
