@@ -21,15 +21,12 @@ exclude = [
     ".travis.yml",
 ]
 
-[badges]
-travis-ci = { repository = "robo9k/rust-magic" }
-
 [lib]
 name = "magic"
 
 [dependencies]
-magic-sys = "0.2.0"
-bitflags = "0.7.0"
+magic-sys = { path = "../rust-magic-sys" }
+bitflags = "1.2"
 libc = "0.2.13"
 
 [dev-dependencies]
