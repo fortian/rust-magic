@@ -7,7 +7,7 @@
 //!
 //! ```sh
 //! $ file data/tests/rust-logo-128x128-blk.png
-//! data/tests/rust-logo-128x128-blk.png: PNG image data, 128 x 128, 8-bit/color RGBA, non-interlaced
+//! data/tests/rust-logo-128x128-blk.png: PNG image data, 128 x 128, 8-bit colormap, non-interlaced
 //! ```
 //!
 //! # Usage example
@@ -26,7 +26,7 @@
 //!
 //!     // Recognize the magic of a test file
 //!     let test_file_path = "data/tests/rust-logo-128x128-blk.png";
-//!     let expected_magic = "PNG image data, 128 x 128, 8-bit/color RGBA, non-interlaced";
+//!     let expected_magic = "PNG image data, 128 x 128, 8-bit colormap, non-interlaced";
 //!     assert_eq!(cookie.file(&test_file_path).unwrap(), expected_magic);
 //! }
 //! ```
@@ -436,7 +436,7 @@ mod tests {
 
         assert_eq!(
             cookie.file(&path).ok().unwrap(),
-            "PNG image data, 128 x 128, 8-bit/color RGBA, non-interlaced"
+            "PNG image data, 128 x 128, 8-bit colormap, non-interlaced"
         );
 
         cookie.set_flags(flags::CookieFlags::MIME_TYPE);
