@@ -14,12 +14,16 @@ authors = [
 	"Jeff Belgum <belgum@bastille.io>",
 	"Onur Aslan <onur@onur.im>",
 	"robo9k <robo@9k.lv>",
+	"Ben Stern <bas-github@bstern.org>",
 ]
-version = "0.12.2"
+version = "0.13.0"
 exclude = [
     ".gitignore",
     ".travis.yml",
 ]
+
+[badges]
+travis-ci = { repository = "robo9k/rust-magic" }
 
 [lib]
 name = "magic"
@@ -27,8 +31,8 @@ name = "magic"
 [dependencies]
 magic-sys = { path = "../rust-magic-sys" }
 bitflags = "1.2"
-libc = "0.2.13"
+libc = "0.2"
 errno = "0.2"
 
 [dev-dependencies]
-regex = "0.1.71"
+regex = "1.4"

@@ -422,6 +422,7 @@ mod tests {
 
     use super::flags;
     use super::Cookie;
+    use self::regex::Regex;
 
     // Using relative paths to test files should be fine, since cargo doc
     // http://doc.crates.io/build-script.html#inputs-to-the-build-script
@@ -485,6 +486,6 @@ mod tests {
 
     #[test]
     fn version() {
-        assert!(regex::is_match(r"\d+\.\d+.\d+", super::version()).ok().unwrap());
+        assert!(Regex::new(r"^\d+\.\d+.\d+$").unwrap().is_match(super::version()))
     }
 }
