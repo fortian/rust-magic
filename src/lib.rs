@@ -173,13 +173,15 @@ pub fn version() -> &'static str {
     )
 }
 
-fn db_filenames<P: AsRef<Path>>(filenames: &[P]) -> *const c_char {
+fn db_filenames(filenames: &[&str]) -> *const c_char {
     match filenames.len() {
         0 => ptr::null(),
         // FIXME: This is just plain wrong. I'm surprised it works at all..
-        1 => CString::new(filenames[0].as_ref().to_string_lossy().into_owned())
-            .unwrap()
-            .into_raw(),
+        1 => {
+            let rv = CString::new(filenames[0]).unwrap();
+            eprintln!("{:?}", rv);
+            rv.into_raw()
+        },
         _ => unimplemented!(),
     }
 }
@@ -300,7 +302,7 @@ impl Cookie {
     // TODO: ^ also needs to implement multiple databases, possibly waiting for the Path reform
 
     /// Check the validity of entries in the database `filenames`
-    pub fn check<P: AsRef<Path>>(&self, filenames: &[P]) -> Result<(), MagicError> {
+    pub fn check(&self, filenames: &[&str]) -> Result<(), MagicError> {
         let cookie = self.cookie;
         let db_filenames = db_filenames(filenames);
         let ret;
@@ -318,7 +320,7 @@ impl Cookie {
     /// Compiles the given database `filenames` for faster access
     ///
     /// The compiled files created are named from the `basename` of each file argument with '.mgc' appended to it.
-    pub fn compile<P: AsRef<Path>>(&self, filenames: &[P]) -> Result<(), MagicError> {
+    pub fn compile(&self, filenames: &[&str]) -> Result<(), MagicError> {
         let cookie = self.cookie;
         let db_filenames = db_filenames(filenames);
         let ret;
@@ -334,7 +336,7 @@ impl Cookie {
     }
 
     /// Dumps all magic entries in the given database `filenames` in a human readable format
-    pub fn list<P: AsRef<Path>>(&self, filenames: &[P]) -> Result<(), MagicError> {
+    pub fn list(&self, filenames: &[&str]) -> Result<(), MagicError> {
         let cookie = self.cookie;
         let db_filenames = db_filenames(filenames);
         let ret;
@@ -352,9 +354,10 @@ impl Cookie {
     // Loads the given database `filenames` for further queries.
     //
     // Adds ".mgc" to the database filenames as appropriate.
-    fn load<P: AsRef<Path>>(&self, filenames: &[P]) -> Result<(), MagicError> {
+    pub fn load(&self, filenames: &[&str]) -> Result<(), MagicError> {
         let cookie = self.cookie;
         let db_filenames = db_filenames(filenames);
+        eprintln!("{:?} => {:?}", filenames, db_filenames);
         let ret;
 
         unsafe {
@@ -395,7 +398,7 @@ impl Cookie {
     // should behave.
     //
     // This doesn't `load()` any databases yet.
-    fn open(flags: self::flags::CookieFlags) -> Result<Cookie, MagicError> {
+    pub fn open(flags: self::flags::CookieFlags) -> Result<Cookie, MagicError> {
         let cookie;
 
         unsafe {
@@ -414,7 +417,7 @@ impl Cookie {
     /// identified in `filenames`.
     ///
     /// Automatically appends ".mgc" to the file names as appropriate.
-    pub fn new<P: AsRef<Path>>(flags: flags::CookieFlags, filenames: &[P]) -> Result<Cookie, MagicError> {
+    pub fn new(flags: flags::CookieFlags, filenames: &[&str]) -> Result<Cookie, MagicError> {
         let cookie = Cookie::open(flags)?;
         cookie.load(filenames).map(|_| cookie)
     }
@@ -479,7 +482,7 @@ mod tests {
         let cookie = Cookie::open(flags::CookieFlags::NONE | flags::CookieFlags::ERROR)
             .ok()
             .unwrap();
-        assert!(cookie.load::<&str>(&[]).is_ok());
+        assert!(cookie.load(&[]).is_ok());
 
         let ret = cookie.file("non-existent_file.txt");
         assert!(ret.is_err());
@@ -494,7 +497,7 @@ mod tests {
         let cookie = Cookie::open(flags::CookieFlags::NONE | flags::CookieFlags::ERROR)
             .ok()
             .unwrap();
-        assert!(cookie.load::<&str>(&[]).is_ok());
+        assert!(cookie.load(&[]).is_ok());
     }
 
     #[test]
