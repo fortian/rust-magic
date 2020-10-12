@@ -8,13 +8,13 @@ categories = ["api-bindings"]
 repository = "https://github.com/robo9k/rust-magic"
 documentation = "https://docs.rs/magic"
 authors = [
+	"Ben Stern <bas-github@bstern.org>",
 	"Daniel Micay <danielmicay@gmail.com>",
 	"Petar Radošević <petar@wunki.org>",
 	"lilydjwg <lilydjwg@gmail.com>",
 	"Jeff Belgum <belgum@bastille.io>",
 	"Onur Aslan <onur@onur.im>",
 	"robo9k <robo@9k.lv>",
-	"Ben Stern <bas-github@bstern.org>",
 ]
 version = "0.13.0"
 exclude = [
